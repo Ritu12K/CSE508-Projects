@@ -1,1 +1,48 @@
+Test Environment:
+Ubuntu 16.04.5
 
+Compiler Version:
+gcc version 5.4.0
+
+
+Commands to run the program:
+Server side:  pbproxy -k mykey -l 2222 localhost 22
+Client side:   ssh -o "ProxyCommand ./pbproxy -k mykey localhost 2222" localhost
+
+My implementation includes:
+1. All the required functionality as mentioned in the question
+2. I/O multiplexing
+3. Encryption and description is done using AES in CTR mode from OpenSSL library
+
+In order to compile you have to install openssl. After installing, you could use "make" to compile the code.
+
+Working explained:
+
+1. Main function:
+
+step a. Takes the input command arguments using getopt.
+step b. It determines if the proxy is invoked as server or client based on whether option '-l' was received or not.
+step c. Based on the result of step b, it calls the appropriate function for the proxy (either server mode or client mode).
+
+2. Client Proxy Mode:
+step a. Creates a client socket and binds it.
+step b. Connects to the Server.
+step c. I/O multiplexing is ensured by setting stdin and socket connection to non-blocking mode to avoid blocking forever using fcntl flag setting.
+step d. I create a random sequence of 8 bits for IV and send it to the server prior to sending any messages
+step e. If I receive something from stdin, I am encrypting it using key and iv first and then sending it to the proxy server.
+        If I received something from socket, simply write the original data to stdout.
+
+2. Server Proxy Mode:
+step a. Creates a server socket and binds it.
+step b. Accepts connection from clients.
+step c. Establishes ssh connection to the client.
+step d. I/O multiplexing is ensured by setting socket connection and ssh connection to non-blocking mode to avoid blocking forever using fcntl flag setting.
+step e. If I receive something from socket connection, I am decrypting it using key and then sending it to the ssh server.
+        If I receive anything from the ssh server, I am encrypting it and sending back to client.
+
+References:
+1. http://www.cs.rpi.edu/~moorthy/Courses/os98/Pgms/socket.html
+2. http://www.gurutechnologies.net/blog/aes-ctr-encryption-in-c/
+3. http://beej.us/guide/bgnet/output/html/multipage/fcntlman.html
+4. http://stackoverflow.com/questions/25061656/when-is-the-arg-for-f-getfl-fcntl-command-required
+5. http://stackoverflow.com/questions/174531/easiest-way-to-get-files-contents-in-c
