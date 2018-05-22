@@ -1,0 +1,107 @@
+I have implemented the following functionality:
+
+mydump [-i interface] [-r file] [-s string] expression
+
+(expression needs to follow after all options)
+
+-i  Captures live from the network device <interface>. If not
+    specified, mydump automatically selects a default interface to
+    listen on. Capture should continue indefinitely until the user
+    terminates the program.
+
+-r  Reads packets from <file> in tcpdump format.
+
+-s  Only packets containing the string are printed else skipped.(after any BPF filter is applied).
+
+    1. The input options were parsed using getopt() in C.
+
+    2. We begin by deciding the interface we want to sniff on.We either define this device by giving it with option "-i",
+       or pcap to provides a default device.
+
+    3. Initialize pcap using file handles.
+
+    4. If we have any trace file to read (in  -r option), we assign it to the handle and print output like tcpdump.
+
+    5. if a BPF filter is given, we must create a rule set, "compile" it, and apply it.
+       The rule set is kept in a string, and is converted into a format that pcap can read.
+
+    6. Using  pcap_loop(), we pass our callback function which needs to be called after each packet is received.
+
+    7. In callback function "gotPacket()", we parse the ehternet header of the packet and check if it is IP or ARP packet.
+       And we process the packet accordingly.
+
+
+       Following are the sample outputs for each type of packets:
+
+
+       CASE 1: if packet is IP
+
+       a) tcp :
+
+
+          2013-01-14 12:48:18.815958  C4:3D:C7:17:6F:9B-> 00:0C:29:E9:94:8E type 0x0800 len 66
+          1.234.31.20:55672-> 192.168.0.200:80  TCP
+          Payload length:0 bytes
+
+          2013-01-14 12:48:18.817364  C4:3D:C7:17:6F:9B-> 00:0C:29:E9:94:8E type 0x0800 len 233
+          1.234.31.20:55672-> 192.168.0.200:80  TCP
+          Payload length:167 bytes
+          00000   47 45 54 20 2f 4d 79 41  64 6d 69 6e 2f 73 63 72    GET /MyAdmin/scr
+          00016   69 70 74 73 2f 73 65 74  75 70 2e 70 68 70 20 48    ipts/setup.php H
+          00032   54 54 50 2f 31 2e 31 0d  0a 41 63 63 65 70 74 3a    TTP/1.1..Accept:
+          00048   20 2a 2f 2a 0d 0a 41 63  63 65 70 74 2d 4c 61 6e     */*..Accept-Lan
+          00064   67 75 61 67 65 3a 20 65  6e 2d 75 73 0d 0a 41 63    guage: en-us..Ac
+          00080   63 65 70 74 2d 45 6e 63  6f 64 69 6e 67 3a 20 67    cept-Encoding: g
+          00096   7a 69 70 2c 20 64 65 66  6c 61 74 65 0d 0a 55 73    zip, deflate..Us
+          00112   65 72 2d 41 67 65 6e 74  3a 20 5a 6d 45 75 0d 0a    er-Agent: ZmEu..
+          00128   48 6f 73 74 3a 20 38 36  2e 30 2e 33 33 2e 32 30    Host: 86.0.33.20
+          00144   0d 0a 43 6f 6e 6e 65 63  74 69 6f 6e 3a 20 43 6c    ..Connection: Cl
+          00160   6f 73 65 0d 0a 0d 0a                                ose....
+
+        b) udp:
+
+
+          2013-01-14 13:25:43.622036  C4:3D:C7:17:6F:9B-> 01:00:5E:7F:FF:FA type 0x0800 len 340
+          192.168.0.1:1900-> 239.255.255.250:1900  UDP
+          Payload length:298 bytes
+          00000   4e 4f 54 49 46 59 20 2a  20 48 54 54 50 2f 31 2e    NOTIFY * HTTP/1.
+          00016   31 0d 0a 48 6f 73 74 3a  20 32 33 39 2e 32 35 35    1..Host: 239.255
+          00032   2e 32 35 35 2e 32 35 30  3a 31 39 30 30 0d 0a 43    .255.250:1900..C
+          00048   61 63 68 65 2d 43 6f 6e  74 72 6f 6c 3a 20 6d 61    ache-Control: ma
+          00064   78 2d 61 67 65 3d 36 30  0d 0a 4c 6f 63 61 74 69    x-age=60..Locati
+          00080   6f 6e 3a 20 68 74 74 70  3a 2f 2f 31 39 32 2e 31    on: http://192.1
+          00096   36 38 2e 30 2e 31 3a 31  39 30 30 2f 57 46 41 44    68.0.1:1900/WFAD
+          00112   65 76 69 63 65 2e 78 6d  6c 0d 0a 4e 54 53 3a 20    evice.xml..NTS:
+          00128   73 73 64 70 3a 61 6c 69  76 65 0d 0a 53 65 72 76    ssdp:alive..Serv
+          00144   65 72 3a 20 50 4f 53 49  58 2c 20 55 50 6e 50 2f    er: POSIX, UPnP/
+          00160   31 2e 30 20 42 72 6f 61  64 63 6f 6d 20 55 50 6e    1.0 Broadcom UPn
+          00176   50 20 53 74 61 63 6b 2f  65 73 74 69 6d 61 74 69    P Stack/estimati
+          00192   6f 6e 20 31 2e 30 30 0d  0a 4e 54 3a 20 75 75 69    on 1.00..NT: uui
+          00208   64 3a 46 35 31 39 33 39  30 41 2d 34 34 44 44 2d    d:F519390A-44DD-
+          00224   32 39 35 38 2d 36 32 33  37 2d 45 41 33 37 42 39    2958-6237-EA37B9
+          00240   38 37 43 33 46 44 0d 0a  55 53 4e 3a 20 75 75 69    87C3FD..USN: uui
+          00256   64 3a 46 35 31 39 33 39  30 41 2d 34 34 44 44 2d    d:F519390A-44DD-
+          00272   32 39 35 38 2d 36 32 33  37 2d 45 41 33 37 42 39    2958-6237-EA37B9
+          00288   38 37 43 33 46 44 0d 0a  0d 0a                      87C3FD....
+
+        c) icmp:
+
+
+          2013-01-14 12:42:31.752299  C4:3D:C7:17:6F:9B-> 00:0C:29:E9:94:8E type 0x0800 len 90
+          1.234.31.20-> 192.168.0.200 ICMP
+          Payload length:48 bytes
+          00000   45 00 00 30 00 00 40 00  2e 06 6a 5a c0 a8 00 c8    E..0..@...jZ....
+          00016   01 ea 1f 14 00 50 7b 81  bd cd 09 c6 3a 35 22 b0    .....P{.....:5".
+          00032   70 12 39 08 11 ab 00 00  02 04 05 b4 01 01 04 02    p.9.............
+
+      d) others:
+         it will print raw payload in this case along with other details like "timestamp",
+         "MAC address src and dest", "packet length", "eth type", "IP addresses src and dest",
+         payload size etc
+
+
+
+    CASE 2: if packet is not IP
+
+        it will print raw payload in this case along with other details like "timestamp",
+        "MAC address src and dest", "packet length", "eth type", payload size etc
