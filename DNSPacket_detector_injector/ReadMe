@@ -1,0 +1,65 @@
+HW4 Report
+CSE 508: Network Security
+-----------------------------
+assumptions:
+1.Tested on Ubuntu python version 2
+2. Scapy is installed
+3. netifaces is installed
+
+Part 1) On-path DNS packet injector
+
+The dnsinjector program "dnsinject" will captures the traffic from the network interface in promiscuous mode and will send the forged responses to the victim
+The victim will receive the spoofed responses because of this.
+
+Format:
+python2 dnsinject [-i interface] [-h hostfile] expression
+
+Where,
+
+-i = interface which If not specified, default interface is used for packet sniffing and injection
+
+-h = takes a filename which has a list of pairs of IP and url addresses. The IP corresponding to a particular URL should be sent in the injected packet when a request for the URL is detected by the attacker. If the option is not specified, the injector sends replies to all DNS queries using his own IP.
+
+separated by whitespace, in the following format:
+10.6.6.6      foo.example.com
+10.6.6.6      bar.example.com
+192.168.66.6  www.cs.stonybrook.edu
+
+<expression> = BPF filter. This argument is optional and is the filter argument for the sniff function.This can be one or more strings separated by whitespaces.
+
+Part 2) a passive DNS poisoning attack detector
+
+It captures the traffic in promiscuous mode and detects any DNS poisoning attack attempts.
+
+Format:
+python2 dnsdetect [-i interface] [-r tracefile] expression
+
+Where,
+-i = interface (e.g. eth0). If not specified all the interfaces are scanned.
+
+-r = Read packets from <tracefile>. Tracefile must be in pcap format, otherwise an exception occurs.
+
+<expression> is a BPF filter that specifies a subset of the traffic to be monitored. here ('udp port 53'). For detector it must be a single string (in quotes if multiple)
+
+Once an attack is detected, dnsdetect prints Detected DNS time stamp, transaction ID, attacked domain name, and the original and malicious IP addresses
+
+DNS poisoning attempt
+Time Stamp
+TXID xxxx Request www.xxxxx.com
+Answer1 [List of IP addresses]
+Answer2 [List of IP addresses]
+
+
+(Screenshots of output for dnsdetect running on my pcap file are attached in the submission folder)
+
+Reference:
+---------------
+packet sniffing
+http://www.cs.dartmouth.edu/~sergey/netreads/local/reliable-dns-spoofing-with-python-scapy-nfqueue.html
+Various web resources for Python and Scapy
+Scapy :
+http://webcache.googleusercontent.com/search?q=cache:toxxyc2lBVEJ:danmcinerney.org/reliable-dns-spoofing-with-python-scapy-nfqueue/&num=1&hl=en&gl=us&strip=1&vwsrc=0
+
+https://stackoverflow.com/questions/12501780/dnsrr-iteration
+
+http://bt3gl.github.io/black-hat-python-infinite-possibilities-with-the-scapy-module.html
